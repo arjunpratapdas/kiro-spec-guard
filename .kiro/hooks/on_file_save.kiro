@@ -1,0 +1,7 @@
+// Kiro IDE Security Hook
+// Triggers on file save events to perform security scanning
+
+trigger: file_save
+scan_types: ["xss", "injection", "owasp"]
+output: security_alert
+log_to: /.kiro/steering/security_decisions.log

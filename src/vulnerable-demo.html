@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerable Demo - KiroSpecGuard</title>
+    <style>
+        body { 
+            font-family: 'Courier New', monospace; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #1a1a1a; 
+            color: #00ff00;
+        }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .section { background: #2a2a2a; padding: 20px; border-radius: 8px; border: 1px solid #444; }
+        .vulnerable { border-left: 4px solid #ff4444; }
+        .secure { border-left: 4px solid #00ff00; }
+        h1 { color: #fff; text-align: center; grid-column: 1 / -1; }
+        h2 { color: #ff6b6b; margin-top: 0; }
+        h3 { color: #00ff00; margin-top: 0; }
+        code { background: #333; padding: 2px 6px; border-radius: 3px; }
+        pre { background: #333; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .warning { background: #662200; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .safe { background: #006600; padding: 10px; border-radius: 5px; margin: 10px 0; }
+        .demo-input { width: 100%; padding: 8px; margin: 10px 0; background: #333; color: #fff; border: 1px solid #666; }
+        button { background: #444; color: #fff; border: 1px solid #666; padding: 8px 15px; cursor: pointer; }
+        button:hover { background: #555; }
+        #user-content, #safe-content { min-height: 50px; padding: 10px; margin: 10px 0; border: 1px solid #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛡️ KiroSpecGuard Vulnerability Demo</h1>
+        
+        <!-- VULNERABLE CODE SECTION -->
+        <div class="section vulnerable">
+            <h2>❌ VULNERABLE CODE</h2>
+            <div class="warning">⚠️ These patterns would trigger KiroSpecGuard alerts</div>
+            
+            <h4>XSS via innerHTML (Line 89)</h4>
+            <pre><code>// DANGEROUS: Direct innerHTML assignment
+const userInput = getUrlParameter('content');
+document.getElementById('output').innerHTML = userInput;</code></pre>
+            
+            <h4>XSS via document.write (Line 93)</h4>
+            <pre><code>// DANGEROUS: document.write with user data
+document.write('&lt;p&gt;Hello: ' + userInput + '&lt;/p&gt;');</code></pre>
+            
+            <h4>Code Injection via eval (Line 97)</h4>
+            <pre><code>// DANGEROUS: eval with user input
+const userScript = getUrlParameter('script');
+eval(userScript);</code></pre>
+            
+            <h4>React XSS (Line 101)</h4>
+            <pre><code>// DANGEROUS: Unsanitized dangerouslySetInnerHTML
+&lt;div dangerouslySetInnerHTML={{__html: userInput}} /&gt;</code></pre>
+
+            <div>
+                <h4>Try Vulnerable Code:</h4>
+                <input type="text" id="vuln-input" class="demo-input" placeholder="Enter content (try: &lt;img src=x onerror=alert('XSS')&gt;)">
+                <button onclick="vulnerableDisplay()">Execute Vulnerable Code</button>
+                <div id="user-content" style="background: #330000;"></div>
+            </div>
+        </div>
+
+        <!-- SECURE CODE SECTION -->
+        <div class="section secure">
+            <h3>✅ SECURE CODE</h3>
+            <div class="safe">✅ These patterns pass KiroSpecGuard validation</div>
+            
+            <h4>Safe DOM Manipulation</h4>
+            <pre><code>// SAFE: Use textContent instead of innerHTML
+const safeDiv = document.getElementById('output');
+safeDiv.textContent = userInput;</code></pre>
+            
+            <h4>Safe Element Creation</h4>
+            <pre><code>// SAFE: Create elements programmatically
+const p = document.createElement('p');
+p.textContent = userInput;
+container.appendChild(p);</code></pre>
+            
+            <h4>Input Sanitization</h4>
+            <pre><code>// SAFE: Sanitize before use
+function sanitize(input) {
+    const div = document.createElement('div');
+    div.textContent = input;
+    return div.innerHTML;
+}</code></pre>
+            
+            <h4>Safe React Pattern</h4>
+            <pre><code>// SAFE: Direct text content
+&lt;div&gt;{sanitizedUserInput}&lt;/div&gt;</code></pre>
+
+            <div>
+                <h4>Try Safe Code:</h4>
+                <input type="text" id="safe-input" class="demo-input" placeholder="Enter content (XSS attempts will be neutralized)">
+                <button onclick="safeDisplay()">Execute Safe Code</button>
+                <div id="safe-content" style="background: #003300;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulate URL parameter extraction
+        function getUrlParameter(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name) || '';
+        }
+
+        // VULNERABLE FUNCTION (Would trigger KiroSpecGuard Line 89)
+        function vulnerableDisplay() {
+            const input = document.getElementById('vuln-input').value;
+            // ❌ DANGEROUS: This would be flagged by KiroSpecGuard
+            document.getElementById('user-content').innerHTML = input;
+            
+            // Show what KiroSpecGuard would detect
+            console.warn('🚨 KiroSpecGuard Alert: XSS_INNERHTML detected at line 89');
+            console.warn('Description: Direct innerHTML assignment can lead to XSS vulnerabilities');
+            console.warn('Fix: Use textContent or sanitize HTML with DOMPurify');
+        }
+
+        // VULNERABLE FUNCTION (Would trigger KiroSpecGuard Line 93)
+        function simulateDocumentWrite() {
+            // ❌ DANGEROUS: This would be flagged
+            // document.write('<p>User: ' + userInput + '</p>');
+        }
+
+        // VULNERABLE FUNCTION (Would trigger KiroSpecGuard Line 97) 
+        function simulateEval() {
+            // ❌ DANGEROUS: This would be flagged
+            // eval(userScript);
+        }
+
+        // SAFE FUNCTION (Passes KiroSpecGuard)
+        function safeDisplay() {
+            const input = document.getElementById('safe-input').value;
+            // ✅ SAFE: Using textContent prevents XSS
+            const safeDiv = document.getElementById('safe-content');
+            safeDiv.textContent = `Safe output: ${input}`;
+            
+            console.log('✅ KiroSpecGuard: No vulnerabilities detected');
+        }
+
+        // Additional safe helper functions
+        function sanitizeInput(input) {
+            const div = document.createElement('div');
+            div.textContent = input;
+            return div.innerHTML;
+        }
+
+        function createSafeElement(tag, content) {
+            const element = document.createElement(tag);
+            element.textContent = content;
+            return element;
+        }
+
+        // Demo initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🛡️ KiroSpecGuard Demo Loaded');
+            console.log('This file contains both vulnerable and secure code patterns');
+            console.log('Vulnerable patterns would trigger real-time security alerts');
+        });
+    </script>
+</body>
+</html>

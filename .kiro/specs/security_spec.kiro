@@ -1,0 +1,4 @@
+Prevent basic XSS vulnerabilities in all user input handling
+Ensure all user input is sanitized before rendering to HTML
+Block direct DOM manipulation with untrusted data
+Follow OWASP Top 10 security practices
